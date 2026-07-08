@@ -416,6 +416,22 @@ export default function EventListingPage() {
                   className="w-full rounded-2xl border border-zinc-200 bg-zinc-50/50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-orange-500 focus:bg-white dark:border-zinc-800 dark:bg-zinc-950/50 dark:focus:border-orange-500"
                 />
               </div>
+              <div className="flex flex-wrap gap-1.5 mt-2 text-[10px] text-zinc-400 items-center">
+                <span className="font-bold uppercase tracking-wider">Trending:</span>
+                {['Next.js', 'AI', 'Kubernetes', 'UX'].map((term) => (
+                  <button
+                    key={term}
+                    onClick={() => {
+                      setSearch(term);
+                      setPage(1);
+                    }}
+                    type="button"
+                    className="px-2 py-0.5 rounded-md bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold dark:bg-zinc-800 dark:text-zinc-350 dark:hover:bg-zinc-700 transition"
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Category Select */}

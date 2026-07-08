@@ -188,12 +188,12 @@ const seedData = async () => {
     const createdEvents = await Event.insertMany(eventsToInsert);
     console.log(`Successfully seeded ${createdEvents.length} events.`);
 
-    // 3. Generate 100 Registrations spread across events
+    // 3. Generate 1000 Registrations spread across events
     const registrationsToInsert = [];
     const sourceTypes = ['LinkedIn', 'WhatsApp', 'Instagram', 'Email', 'Direct'] as const;
     const ticketTypes = ['General Admission', 'VIP Pass', 'Student Discount'] as const;
 
-    for (let k = 0; k < 100; k++) {
+    for (let k = 0; k < 1000; k++) {
       const firstName = FIRST_NAMES[k % FIRST_NAMES.length];
       const lastName = LAST_NAMES[k % LAST_NAMES.length];
       const name = `${firstName} ${lastName}`;
@@ -229,9 +229,9 @@ const seedData = async () => {
     }
 
     await Registration.insertMany(registrationsToInsert);
-    console.log(`Successfully seeded 100 registrations.`);
+    console.log(`Successfully seeded 1000 registrations.`);
 
-    // 4. Generate 300+ Analytics Logs
+    // 4. Generate 600 Analytics Logs
     const analyticsLogs = [];
     const logTypes: { type: AnalyticsEventType; payloadGen: (evt: any) => any }[] = [
       { type: 'event_list_viewed', payloadGen: () => ({ filterMode: 'api' }) },
@@ -244,10 +244,10 @@ const seedData = async () => {
       { type: 'registration_submitted', payloadGen: (evt) => ({ eventId: evt._id, eventName: evt.title }) },
       { type: 'registration_success', payloadGen: (evt) => ({ eventId: evt._id, eventName: evt.title, email: 'user@example.com' }) },
       { type: 'dashboard_opened', payloadGen: () => ({ source: 'direct' }) },
-      { type: 'dashboard_export_csv', payloadGen: () => ({ count: 100 }) }
+      { type: 'dashboard_export_csv', payloadGen: () => ({ count: 1000 }) }
     ];
 
-    for (let j = 0; j < 350; j++) {
+    for (let j = 0; j < 600; j++) {
       const logInfo = logTypes[j % logTypes.length];
       const targetEvent = createdEvents[j % createdEvents.length];
       

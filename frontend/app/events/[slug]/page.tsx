@@ -131,6 +131,9 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
   const watchedPhone = watch('phone');
   const watchedTicket = watch('ticketType');
   const watchedCoupon = watch('couponCode');
+  const watchedCollege = watch('college');
+  const watchedCompany = watch('company');
+  const watchedSource = watch('source');
 
   // Calculate ticket pricing based on selected options
   const basePrice = event?.price || 0;
@@ -165,7 +168,9 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
     if (formStep === 1) {
       fieldsToValidate = ['name', 'email', 'phone'];
     } else if (formStep === 2) {
-      fieldsToValidate = ['college', 'company', 'source'];
+      fieldsToValidate = ['college', 'company'];
+    } else if (formStep === 3) {
+      fieldsToValidate = ['source'];
     }
 
     const isValid = await trigger(fieldsToValidate);
@@ -194,7 +199,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
         finalPrice,
       });
       // Skip cleanup immediately to display dynamic confirmation invoice state
-      setFormStep(4); 
+      setFormStep(5); 
       queryClient.invalidateQueries({ queryKey: ['event', slug] });
     },
     onError: (error: any) => {
@@ -629,21 +634,22 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
         title="Secure Seat Registration"
       >
         <div className="space-y-6">
-          {/* Progress Bar (Only visible before completion Step 4) */}
-          {formStep < 4 && (
+          {/* Progress Bar (Only visible before completion Step 5) */}
+          {formStep < 5 && (
             <div className="space-y-2">
               <div className="flex justify-between text-[10px] font-extrabold text-zinc-400 uppercase tracking-widest">
-                <span>Step {formStep} of 3</span>
+                <span>Step {formStep} of 4</span>
                 <span>
                   {formStep === 1 && 'Personal Info'}
-                  {formStep === 2 && 'Organization'}
-                  {formStep === 3 && 'Ticket & Checkout'}
+                  {formStep === 2 && 'Credentials'}
+                  {formStep === 3 && 'Ticket Tier'}
+                  {formStep === 4 && 'Review & Coupon'}
                 </span>
               </div>
               <div className="h-1.5 w-full bg-zinc-100 rounded-full overflow-hidden dark:bg-zinc-800">
                 <div
                   className="h-full bg-orange-600 transition-all duration-350"
-                  style={{ width: `${(formStep / 3) * 100}%` }}
+                  style={{ width: `${(formStep / 4) * 100}%` }}
                 />
               </div>
             </div>
@@ -724,11 +730,11 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
             )}
 
             {/* ==========================================
-                STEP 2: Credentials & Referral Source
+                STEP 2: Credentials (College/Company)
                 ========================================== */}
             {formStep === 2 && (
               <div className="space-y-4 animate-fadeIn">
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-3">
                   <div className="space-y-1">
                     <label htmlFor="reg-college" className="text-xs font-bold text-zinc-500 uppercase tracking-wider block">
                       College / University
@@ -756,23 +762,6 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label htmlFor="reg-source" className="text-xs font-bold text-zinc-500 uppercase tracking-wider block">
-                    Referral Channel *
-                  </label>
-                  <select
-                    id="reg-source"
-                    {...register('source')}
-                    className="w-full rounded-xl border border-zinc-200 py-2.5 px-3.5 text-sm outline-none transition focus:border-orange-500 dark:border-zinc-850 dark:bg-zinc-950/50"
-                  >
-                    <option value="LinkedIn">LinkedIn</option>
-                    <option value="WhatsApp">WhatsApp</option>
-                    <option value="Instagram">Instagram</option>
-                    <option value="Email">Email Announcement</option>
-                    <option value="Direct">Direct / Word of Mouth</option>
-                  </select>
-                </div>
-
                 <div className="pt-4 flex justify-between">
                   <button
                     type="button"
@@ -795,7 +784,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
             )}
 
             {/* ==========================================
-                STEP 3: Ticket Types, Coupons & Checkout
+                STEP 3: Ticket Types & Referral Source
                 ========================================== */}
             {formStep === 3 && (
               <div className="space-y-4 animate-fadeIn">
@@ -851,10 +840,77 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
                   </div>
                 </div>
 
+                <div className="space-y-1">
+                  <label htmlFor="reg-source" className="text-xs font-bold text-zinc-500 uppercase tracking-wider block">
+                    Referral Channel *
+                  </label>
+                  <select
+                    id="reg-source"
+                    {...register('source')}
+                    className="w-full rounded-xl border border-zinc-200 py-2.5 px-3.5 text-sm outline-none transition focus:border-orange-500 dark:border-zinc-850 dark:bg-zinc-950/50"
+                  >
+                    <option value="LinkedIn">LinkedIn</option>
+                    <option value="WhatsApp">WhatsApp</option>
+                    <option value="Instagram">Instagram</option>
+                    <option value="Email">Email Announcement</option>
+                    <option value="Direct">Direct / Word of Mouth</option>
+                  </select>
+                </div>
+
+                <div className="pt-4 flex justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setFormStep(2)}
+                    className="inline-flex items-center gap-1 rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-350"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextStep}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-orange-500 shadow"
+                  >
+                    Continue
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ==========================================
+                STEP 4: Review Details & Promo Checkout
+                ========================================== */}
+            {formStep === 4 && (
+              <div className="space-y-4 animate-fadeIn">
+                {/* Visual Review Check */}
+                <div className="bg-zinc-50 border border-zinc-150 rounded-2xl p-4 space-y-2.5 text-xs dark:bg-zinc-950/40 dark:border-zinc-800">
+                  <span className="font-bold text-zinc-700 dark:text-zinc-300 block mb-1">Verify Registration Profile</span>
+                  <div className="grid grid-cols-2 gap-y-2">
+                    <span className="text-zinc-400">Full Name:</span>
+                    <span className="font-bold text-zinc-850 dark:text-zinc-150 text-right">{watchedName}</span>
+                    
+                    <span className="text-zinc-400">Email:</span>
+                    <span className="font-bold text-zinc-850 dark:text-zinc-150 text-right truncate">{watchedEmail}</span>
+
+                    <span className="text-zinc-400">Contact:</span>
+                    <span className="font-bold text-zinc-850 dark:text-zinc-150 text-right">+91 {watchedPhone}</span>
+
+                    <span className="text-zinc-400">College:</span>
+                    <span className="font-bold text-zinc-850 dark:text-zinc-150 text-right truncate">{watchedCollege || 'N/A'}</span>
+
+                    <span className="text-zinc-400">Company:</span>
+                    <span className="font-bold text-zinc-850 dark:text-zinc-150 text-right truncate">{watchedCompany || 'N/A'}</span>
+
+                    <span className="text-zinc-400">Ticket Type:</span>
+                    <span className="font-bold text-orange-650 dark:text-orange-400 text-right">{watchedTicket}</span>
+                  </div>
+                </div>
+
                 {/* Promo Code Input */}
                 <div className="space-y-1.5 pt-2 border-t border-zinc-100 dark:border-zinc-800">
                   <label htmlFor="reg-coupon" className="text-xs font-bold text-zinc-500 uppercase tracking-wider block">
-                    Promo Coupon
+                    Promo Coupon Code
                   </label>
                   <div className="flex gap-2">
                     <input
@@ -873,7 +929,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
                     </button>
                   </div>
                   {couponApplied && (
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold block">
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold block animate-bounce">
                       ✓ Coupon Applied! Save 20% on booking.
                     </span>
                   )}
@@ -886,13 +942,13 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
 
                 {/* Checkout Summary Invoice Box */}
                 <div className="bg-zinc-50 border border-zinc-150 rounded-2xl p-4 space-y-2 text-xs dark:bg-zinc-950/40 dark:border-zinc-800">
-                  <span className="font-bold text-zinc-700 dark:text-zinc-300 block mb-1">Invoice Invoice Summary</span>
+                  <span className="font-bold text-zinc-700 dark:text-zinc-300 block mb-1">Invoice Summary</span>
                   <div className="flex justify-between">
                     <span className="text-zinc-500 font-medium">Ticket Type:</span>
                     <span className="font-bold text-zinc-850 dark:text-zinc-150">{watchedTicket}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-zinc-500 font-medium">Booking price:</span>
+                    <span className="text-zinc-500 font-medium">Base Price:</span>
                     <span className="font-bold text-zinc-850 dark:text-zinc-150">
                       {watchedTicket === 'General Admission' && basePrice === 0 ? 'FREE' : `₹${watchedTicket === 'VIP Pass' ? (basePrice > 0 ? basePrice + 500 : 499) : (basePrice > 0 ? Math.max(0, basePrice - 200) : 0)}`}
                     </span>
@@ -915,7 +971,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
                 <div className="pt-4 flex justify-between">
                   <button
                     type="button"
-                    onClick={() => setFormStep(2)}
+                    onClick={() => setFormStep(3)}
                     className="inline-flex items-center gap-1 rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-350"
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -944,9 +1000,9 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
             )}
 
             {/* ==========================================
-                STEP 4: Registration Success Confirmation
+                STEP 5: Registration Success Confirmation
                 ========================================== */}
-            {formStep === 4 && (
+            {formStep === 5 && (
               <div className="text-center py-6 space-y-5 animate-fadeIn">
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30">
                   <CheckCircle className="h-8 w-8" />
@@ -972,6 +1028,10 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
                   <div className="flex justify-between">
                     <span className="text-zinc-400">Mobile ID:</span>
                     <span className="font-bold text-zinc-800 dark:text-zinc-200">+91 {watchedPhone}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">Ticket Type:</span>
+                    <span className="font-bold text-zinc-800 dark:text-zinc-200">{watchedTicket}</span>
                   </div>
                   <div className="flex justify-between border-t border-zinc-200/50 pt-2 font-bold text-zinc-900 dark:text-zinc-100 dark:border-zinc-850">
                     <span>Owed:</span>

@@ -6,7 +6,7 @@ import { CustomError } from '../middlewares/error.middleware';
 // POST /api/events/:id/register
 export const registerForEvent = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
-  const { name, email, phone, college, company, source } = req.body;
+  const { name, email, phone, college, company, source, ticketType, couponCode, referralCode } = req.body;
 
   const lowercaseEmail = email.toLowerCase().trim();
 
@@ -37,6 +37,12 @@ export const registerForEvent = async (req: Request, res: Response): Promise<voi
     throw error;
   }
 
+  // Determine payment status based on event price and ticket type
+  let paymentStatus: 'Paid' | 'Free' | 'Pending' = 'Free';
+  if (event.price > 0) {
+    paymentStatus = ticketType === 'VIP Pass' || ticketType === 'General Admission' ? 'Paid' : 'Pending';
+  }
+
   let newRegistration;
   try {
     // 4. Create registration record
@@ -48,6 +54,10 @@ export const registerForEvent = async (req: Request, res: Response): Promise<voi
       college,
       company,
       source,
+      ticketType: ticketType || 'General Admission',
+      couponCode: couponCode || '',
+      paymentStatus,
+      referralCode: referralCode || '',
     });
 
     await newRegistration.save();
@@ -61,15 +71,14 @@ export const registerForEvent = async (req: Request, res: Response): Promise<voi
     throw err;
   }
 
-  // 5. Atomically decrement available seats and increment registered count.
-  // We use a query filter { availableSeats: { $gt: 0 } } to prevent race conditions.
+  // 5. Atomically decrement available seats and increment registered count
   const updatedEvent = await Event.findOneAndUpdate(
     { _id: id, availableSeats: { $gt: 0 } },
     { $inc: { availableSeats: -1, registeredCount: 1 } },
     { new: true }
   );
 
-  // If the atomic update fails (e.g. seats became 0 between check and update), rollback!
+  // Rollback if the atomic update fails (seats filled at the exact millisecond)
   if (!updatedEvent) {
     await Registration.deleteOne({ _id: newRegistration._id });
     const error: CustomError = new Error('All seats for this event have been filled');

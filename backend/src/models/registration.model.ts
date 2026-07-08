@@ -8,6 +8,10 @@ export interface IRegistration extends Document {
   college: string;
   company: string;
   source: 'LinkedIn' | 'WhatsApp' | 'Instagram' | 'Email' | 'Direct';
+  ticketType: 'General Admission' | 'VIP Pass' | 'Student Discount';
+  couponCode?: string;
+  paymentStatus: 'Pending' | 'Paid' | 'Free';
+  referralCode?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -51,6 +55,28 @@ const registrationSchema = new Schema<IRegistration>(
       type: String,
       required: true,
       enum: ['LinkedIn', 'WhatsApp', 'Instagram', 'Email', 'Direct'],
+    },
+    ticketType: {
+      type: String,
+      required: true,
+      enum: ['General Admission', 'VIP Pass', 'Student Discount'],
+      default: 'General Admission',
+    },
+    couponCode: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    paymentStatus: {
+      type: String,
+      required: true,
+      enum: ['Pending', 'Paid', 'Free'],
+      default: 'Free',
+    },
+    referralCode: {
+      type: String,
+      trim: true,
+      default: '',
     },
   },
   {

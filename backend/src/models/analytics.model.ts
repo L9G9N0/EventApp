@@ -9,7 +9,13 @@ export type AnalyticsEventType =
   | 'registration_success'
   | 'registration_failed'
   | 'dashboard_opened'
-  | 'dashboard_export_csv';
+  | 'dashboard_export_csv'
+  | 'share_clicked'
+  | 'bookmark_clicked'
+  | 'download_calendar'
+  | 'copy_url'
+  | 'speaker_clicked'
+  | 'faq_expanded';
 
 export interface IAnalytics extends Document {
   eventType: AnalyticsEventType;
@@ -35,6 +41,12 @@ const analyticsSchema = new Schema<IAnalytics>(
         'registration_failed',
         'dashboard_opened',
         'dashboard_export_csv',
+        'share_clicked',
+        'bookmark_clicked',
+        'download_calendar',
+        'copy_url',
+        'speaker_clicked',
+        'faq_expanded',
       ],
     },
     payload: {

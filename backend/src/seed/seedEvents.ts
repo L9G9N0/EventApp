@@ -1,237 +1,272 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import { Event, IEvent } from '../models/event.model';
+import { Event } from '../models/event.model';
 import { Registration } from '../models/registration.model';
-import { AnalyticsLog } from '../models/analytics.model';
+import { AnalyticsLog, AnalyticsEventType } from '../models/analytics.model';
 
 dotenv.config();
 
-const sampleEvents = [
-  {
-    title: 'India GenAI Builders Summit 2026',
-    slug: 'india-genai-builders-summit-2026',
-    description: 'The largest gathering of generative AI engineers and builders in Silicon Valley of India.',
-    longDescription: 'Join us for an action-packed day of deep-tech talks, panel discussions, and hands-on workshops focused on building production-ready LLM agents, scaling vector databases, and optimizing open-source foundation models. Network with top researchers, startup founders, and engineers from across the country.',
-    date: new Date('2026-08-15T09:30:00Z'),
-    category: 'AI Meetup',
-    location: 'Bengaluru, HSR Layout Sector 4',
-    mode: 'Offline',
-    availableSeats: 120,
-    registeredCount: 0,
-    speaker: 'Dr. Amit Sharma (Director of AI, TechCorp)',
-    duration: '8 Hours',
-    banner: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=60',
-  },
-  {
-    title: 'Next.js 15 Server Components Deep Dive',
-    slug: 'nextjs-15-server-components-deep-dive',
-    description: 'Master React Server Components, Server Actions, and partial pre-rendering in Next.js 15.',
-    longDescription: 'A comprehensive, hands-on workshop led by industry veterans. Learn how to architect lightning-fast applications using Next.js 15 App Router. We will cover server components vs client components, caching strategies, optimistic UI updates, dynamic database rendering, and production deployment optimization on Vercel.',
-    date: new Date('2026-09-02T14:00:00Z'),
-    category: 'Workshop',
-    location: 'Noida, Sector 62',
-    mode: 'Hybrid',
-    availableSeats: 50,
-    registeredCount: 0,
-    speaker: 'Rohan Verma (Senior Frontend Engineer, Zepto)',
-    duration: '4 Hours',
-    banner: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=800&auto=format&fit=crop&q=60',
-  },
-  {
-    title: 'Delhi National Web3 Hackathon',
-    slug: 'delhi-national-web3-hackathon',
-    description: 'Code the decentralized future and win prizes up to ₹5,00,000.',
-    longDescription: 'Delhi NCR\'s premier hackathon is back! Work solo or in teams of up to 4 to build innovative solutions on Ethereum, Solana, and Layer 2s. Mentors from top web3 startups will be on-site to guide you. Food, drinks, and cool swag are on us. Ready to build the next unicorn?',
-    date: new Date('2026-10-10T10:00:00Z'),
-    category: 'Hackathon',
-    location: 'Delhi, Pragati Maidan',
-    mode: 'Offline',
-    availableSeats: 250,
-    registeredCount: 0,
-    speaker: 'Vikram Malhotra & Team (Founders, BlockScale)',
-    duration: '3 Days',
-    banner: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&auto=format&fit=crop&q=60',
-  },
-  {
-    title: 'Fintech Revolution and UPI 2.0 Seminar',
-    slug: 'fintech-revolution-and-upi-seminar',
-    description: 'An exclusive panel session on the future of digital payments, credit cards, and cross-border UPI.',
-    longDescription: 'Explore how fintech is reshaping the banking landscape in India. We will discuss UPI integration with credit cards, automated lending systems, CBDC (Digital Rupee) implementation, and security challenges in payment gateway integrations. Perfect for fintech product managers and builders.',
-    date: new Date('2026-08-28T16:00:00Z'),
-    category: 'Seminar',
-    location: 'Mumbai, BKC Complex',
-    mode: 'Offline',
-    availableSeats: 80,
-    registeredCount: 0,
-    speaker: 'Priya Mehta (VP Product, BharatPay)',
-    duration: '3 Hours',
-    banner: 'https://images.unsplash.com/photo-1556761175-4b46a572b786?w=800&auto=format&fit=crop&q=60',
-  },
-  {
-    title: 'Scale and Design Systems Webinar',
-    slug: 'scale-and-design-systems-webinar',
-    description: 'Learn how to build reusable, accessible, and performant design systems for enterprise scale.',
-    longDescription: 'In this webinar, we will explore the strategies used to manage UI systems across hundreds of developers. We will talk about styling tokens, atomic component structures, WAI-ARIA accessibility compliance, package versioning, and automated UI regression testing.',
-    date: new Date('2026-09-12T11:00:00Z'),
-    category: 'Webinar',
-    location: 'Zoom Meetings',
-    mode: 'Online',
-    availableSeats: 500,
-    registeredCount: 0,
-    speaker: 'Ananya Sen (Principal Designer, Razorpay)',
-    duration: '2 Hours',
-    banner: 'https://images.unsplash.com/photo-1591115413009-d621367f18e5?w=800&auto=format&fit=crop&q=60',
-  },
-  {
-    title: 'Full-Stack Dev Bootcamp: Zero to One',
-    slug: 'full-stack-dev-bootcamp-zero-to-one',
-    description: 'A 6-week intensive bootcamp to level up your engineering skills.',
-    longDescription: 'Become a highly paid, production-ready full-stack developer. Learn advanced React, Next.js, Node.js/Express, MongoDB indexing, Docker deployment, and CI/CD pipelines. This includes 1-on-1 mentorship, weekly code reviews, and mock interview preparations.',
-    date: new Date('2026-11-01T09:00:00Z'),
-    category: 'Bootcamp',
-    location: 'Gurugram, Cyber City Phase II',
-    mode: 'Hybrid',
-    availableSeats: 30,
-    registeredCount: 0,
-    speaker: 'Sandeep Chaudhary (Founder, CodeCamp India)',
-    duration: '6 Weeks',
-    banner: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&auto=format&fit=crop&q=60',
-  },
-  {
-    title: 'Pune Cloud & DevOps Engineering Meetup',
-    slug: 'pune-cloud-devops-meetup',
-    description: 'Discussing Kubernetes scaling, Terraform state management, and serverless architectures.',
-    longDescription: 'Meet up with fellow system administrators, DevOps engineers, and cloud architects in Pune. We will have technical talks on running stateful sets in Kubernetes, Infrastructure as Code workflows, cost optimization on AWS/GCP, and logging/observability using Prometheus & Grafana.',
-    date: new Date('2026-09-20T17:30:00Z'),
-    category: 'AI Meetup',
-    location: 'Pune, Hinjewadi IT Park Phase 1',
-    mode: 'Offline',
-    availableSeats: 60,
-    registeredCount: 0,
-    speaker: 'Nilesh Patil (DevOps Lead, CloudScale)',
-    duration: '3.5 Hours',
-    banner: 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800&auto=format&fit=crop&q=60',
-  },
-  {
-    title: 'Hyderabad UX/UI Advanced Masterclass',
-    slug: 'hyderabad-uxui-advanced-masterclass',
-    description: 'Deep dive into user research, wireframing, and interactive prototyping.',
-    longDescription: 'A practical, interactive workshop focusing on modern interface design. Learn how to translate user pain points into elegant interfaces, run usability tests, and build high-fidelity interactive prototypes in Figma. Attendees will receive a certificate of completion.',
-    date: new Date('2026-08-05T10:00:00Z'),
-    category: 'Workshop',
-    location: 'Hyderabad, Gachibowli Financial District',
-    mode: 'Hybrid',
-    availableSeats: 40,
-    registeredCount: 0,
-    speaker: 'Rajesh Goud (Design Consultant)',
-    duration: '1 Day',
-    banner: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&auto=format&fit=crop&q=60',
-  },
-  {
-    title: 'Chandigarh Tech Startup Pitch and Networking',
-    slug: 'chandigarh-tech-startup-pitch',
-    description: 'Pitch your startup ideas to VCs and connect with co-founders.',
-    longDescription: 'Are you building a tech startup in Punjab/Chandigarh? Present your startup MVP to active seed-stage investors, receive direct feedback, and network with fellow programmers and creators. Find your next investor or developer!',
-    date: new Date('2026-08-20T15:00:00Z'),
-    category: 'Seminar',
-    location: 'Chandigarh, Sector 17',
-    mode: 'Offline',
-    availableSeats: 100,
-    registeredCount: 0,
-    speaker: 'Harpreet Singh (Managing Partner, PunjabVentures)',
-    duration: '3 Hours',
-    banner: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=800&auto=format&fit=crop&q=60',
-  },
+// Seeding configuration options
+const CITIES = [
+  'Bengaluru, Karnataka',
+  'Noida, Uttar Pradesh',
+  'Gurugram, Haryana',
+  'Delhi, NCR',
+  'Pune, Maharashtra',
+  'Hyderabad, Telangana',
+  'Mumbai, Maharashtra',
+  'Chandigarh, Punjab',
+  'Chennai, Tamil Nadu',
+  'Jaipur, Rajasthan',
+  'Kochi, Kerala',
+  'Kolkata, West Bengal',
+  'Ahmedabad, Gujarat'
 ];
 
-const sampleRegistrations = [
-  { name: 'Aarav Sharma', email: 'aarav.sharma@gmail.com', phone: '9876543210', college: 'IIT Delhi', company: '', source: 'LinkedIn' },
-  { name: 'Aditi Verma', email: 'aditi.verma@yahoo.com', phone: '8765432109', college: 'NSUT Delhi', company: '', source: 'WhatsApp' },
-  { name: 'Rohan Gupta', email: 'rohan.g@tcs.com', phone: '7654321098', college: '', company: 'TCS Noida', source: 'Direct' },
-  { name: 'Karan Malhotra', email: 'karan.m@gmail.com', phone: '9123456789', college: 'DTU Delhi', company: '', source: 'Instagram' },
-  { name: 'Priya Iyer', email: 'priya.iyer@microsoft.com', phone: '8234567890', college: '', company: 'Microsoft Bengaluru', source: 'LinkedIn' },
-  { name: 'Siddharth Patil', email: 'sid.patil@outlook.com', phone: '7345678901', college: 'COEP Pune', company: '', source: 'Email' },
-  { name: 'Nisha Reddy', email: 'nisha.r@gmail.com', phone: '9456789012', college: 'IIIT Hyderabad', company: '', source: 'WhatsApp' },
-  { name: 'Arjun Singh', email: 'arjun.s@infosys.com', phone: '8567890123', college: '', company: 'Infosys Chandigarh', source: 'LinkedIn' },
-  { name: 'Meera Nair', email: 'meera.n@gmail.com', phone: '7678901234', college: 'PES University', company: '', source: 'Direct' },
-  { name: 'Vikram Joshi', email: 'vikram.j@gmail.com', phone: '6789012345', college: 'BITS Pilani', company: '', source: 'Instagram' },
+const CATEGORIES = ['Workshop', 'Hackathon', 'Seminar', 'Webinar', 'Bootcamp', 'AI Meetup'] as const;
+
+const SPEAKERS = [
+  { name: 'Dr. Amit Sharma', title: 'Director of AI', company: 'TechCorp', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=60' },
+  { name: 'Rohan Verma', title: 'Principal Engineer', company: 'Zepto', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=60' },
+  { name: 'Priya Mehta', title: 'VP Product', company: 'Razorpay', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=60' },
+  { name: 'Sandeep Chaudhary', title: 'Founder', company: 'CodeCamp India', image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=60' },
+  { name: 'Ananya Sen', title: 'Principal Designer', company: 'Zomato', image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=60' },
+  { name: 'Karthik Sundar', title: 'Developer Relations', company: 'Polygon', image: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=60' },
+  { name: 'Harpreet Singh', title: 'Partner', company: 'PunjabVentures', image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=60' },
+  { name: 'Nilesh Patil', title: 'DevOps Architect', company: 'AWS Community', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=60' }
 ];
 
-const sampleAnalyticsLogs = [
-  { eventType: 'dashboard_opened', payload: {} },
-  { eventType: 'event_list_viewed', payload: { category: 'All', mode: 'All' } },
-  { eventType: 'event_search_performed', payload: { query: 'Next.js' } },
-  { eventType: 'event_filter_applied', payload: { filter: 'category', value: 'Workshop' } },
-  { eventType: 'event_card_clicked', payload: { slug: 'nextjs-15-server-components-deep-dive' } },
-  { eventType: 'registration_submitted', payload: { slug: 'nextjs-15-server-components-deep-dive' } },
-  { eventType: 'registration_success', payload: { email: 'aarav.sharma@gmail.com', slug: 'nextjs-15-server-components-deep-dive' } },
-  { eventType: 'dashboard_export_csv', payload: {} },
+const COMPANIES = [
+  { name: 'Razorpay', logo: 'https://images.unsplash.com/photo-1614680376593-902f74fa0d41?w=80&auto=format&fit=crop&q=60' },
+  { name: 'Zomato', logo: 'https://images.unsplash.com/photo-1614680376739-414d95ff43df?w=80&auto=format&fit=crop&q=60' },
+  { name: 'Zepto', logo: 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=80&auto=format&fit=crop&q=60' },
+  { name: 'Polygon', logo: 'https://images.unsplash.com/photo-1622630998477-20aa696ecb05?w=80&auto=format&fit=crop&q=60' },
+  { name: 'Cred', logo: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=80&auto=format&fit=crop&q=60' },
+  { name: 'Google Cloud', logo: 'https://images.unsplash.com/photo-1572021335469-31706a17aaef?w=80&auto=format&fit=crop&q=60' }
 ];
+
+const TOPICS = [
+  {
+    title: 'React 19 & Next.js Advanced Patterns',
+    desc: 'Deep dive into server actions, partial pre-rendering, and the new React compiler.',
+    longDesc: 'Master client-side hydration, streaming HTML, rendering optimization, and architectural patterns of React 19. Learn to deploy serverless infrastructures and reduce layout shifting.',
+    banners: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&auto=format&fit=crop&q=60'
+  },
+  {
+    title: 'Generative AI & LLM Agent Hackday',
+    desc: 'Build, benchmark, and deploy autonomous LLM agents using vector databases.',
+    longDesc: 'Work with LangChain, LlamaIndex, and vector databases like Milvus or Pinecone. We will cover Retrieval-Augmented Generation (RAG) pipelines, system evaluation, and prompt engineering.',
+    banners: 'https://images.unsplash.com/photo-1677442136019-21780efad99a?w=800&auto=format&fit=crop&q=60'
+  },
+  {
+    title: 'Fintech Security & UPI 3.0 Roundtable',
+    desc: 'An exploration of scalable digital currency ledger integrations and payment gateways.',
+    longDesc: 'Learn the architectural patterns behind payment settlements, ledger locks, transaction safety under high concurrency, and upcoming cross-border UPI transaction frameworks.',
+    banners: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&auto=format&fit=crop&q=60'
+  },
+  {
+    title: 'Production Kubernetes & IaC Masterclass',
+    desc: 'Architecting multi-region clusters with Terraform and GitOps practices.',
+    longDesc: 'Manage massive traffic spikes using automated horizontal scaling. Topics include service meshes (Istio), Terraform state isolation, custom controllers, and Prometheus alerting.',
+    banners: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=60'
+  },
+  {
+    title: 'UI/UX Advanced System Architecture',
+    desc: 'Designing and publishing accessible, performant design systems for enterprise scale.',
+    longDesc: 'A seminar detailing the creation of atomic components, design system packaging, WCAG 2.2 contrast compliance, and automatic UI visual testing pipelines.',
+    banners: 'https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?w=800&auto=format&fit=crop&q=60'
+  },
+  {
+    title: 'Blockchain Scaling & Zero Knowledge Proofs',
+    desc: 'Decentralized application engineering using cryptographic rollups.',
+    longDesc: 'Understand Rollup mechanics, Solidity smart contract optimization, gas fee reduction strategies, zk-SNARK integrations, and multi-signature security practices.',
+    banners: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=800&auto=format&fit=crop&q=60'
+  }
+];
+
+const FIRST_NAMES = ['Aarav', 'Aditi', 'Rohan', 'Priya', 'Karan', 'Nisha', 'Siddharth', 'Meera', 'Vikram', 'Ananya', 'Rahul', 'Neha', 'Amit', 'Pooja', 'Sandeep', 'Kriti', 'Rajesh', 'Jyoti', 'Harpreet', 'Shreya'];
+const LAST_NAMES = ['Sharma', 'Verma', 'Gupta', 'Malhotra', 'Iyer', 'Patil', 'Reddy', 'Singh', 'Nair', 'Joshi', 'Chaudhary', 'Patel', 'Kumar', 'Das'];
 
 const seedData = async () => {
   try {
     const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/event_registration_db';
-    console.log('Seeding database...');
+    console.log('Starting heavy database seeding (100 Events + 100 registrations + analytics logs)...');
     await mongoose.connect(mongoUri);
 
-    // 1. Clear existing data
+    // 1. Wipe collections
     await Event.deleteMany({});
     await Registration.deleteMany({});
     await AnalyticsLog.deleteMany({});
-    console.log('Cleared existing data.');
+    console.log('Database wiped.');
 
-    // 2. Insert Events
-    const createdEvents = await Event.insertMany(sampleEvents);
-    console.log(`Inserted ${createdEvents.length} events.`);
+    // 2. Generate 100 Rich Events
+    const eventsToInsert = [];
+    const now = new Date();
 
-    // 3. Insert Registrations & update corresponding Event seat numbers
-    // Let's distribute registrations across events
-    for (let i = 0; i < sampleRegistrations.length; i++) {
-      const reg = sampleRegistrations[i];
-      // Distribute registrations: Event index = i % eventCount
-      const targetEvent = createdEvents[i % createdEvents.length];
+    for (let i = 1; i <= 100; i++) {
+      const topic = TOPICS[i % TOPICS.length];
+      const speaker = SPEAKERS[i % SPEAKERS.length];
+      const company = COMPANIES[i % COMPANIES.length];
+      const category = CATEGORIES[i % CATEGORIES.length];
       
-      const newReg = new Registration({
-        ...reg,
-        eventId: targetEvent._id,
-      });
+      const cityString = CITIES[i % CITIES.length];
+      const isOnline = category === 'Webinar' || i % 7 === 0;
+      const mode = isOnline ? 'Online' : (i % 5 === 0 ? 'Hybrid' : 'Offline');
+      const location = isOnline ? 'Zoom Meetings Live' : `${cityString}, Tech Park Sector ${i}`;
+      
+      const title = `${topic.title} - Batch #${Math.ceil(i / TOPICS.length)}`;
+      const baseSlug = title
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/[\s_-]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      const slug = `${baseSlug}-${i}`;
 
-      await newReg.save();
+      // Date: offset in future from 2 to 120 days
+      const date = new Date(now.getTime() + (2 + (i % 120)) * 24 * 60 * 60 * 1000);
+      
+      // Price structure (some free, some paid)
+      const price = i % 3 === 0 ? 499 : (i % 5 === 0 ? 1299 : 0);
+      const difficulty = i % 3 === 0 ? 'Advanced' : (i % 2 === 0 ? 'Intermediate' : 'Beginner');
 
-      // Decrement seats and increment registrations count on Event
-      await Event.findByIdAndUpdate(targetEvent._id, {
-        $inc: { availableSeats: -1, registeredCount: 1 },
+      const requirements = [
+        'Basic familiarity with programming principles',
+        difficulty !== 'Beginner' ? 'Experience working with REST APIs and variables' : 'Laptop and a GitHub account',
+        difficulty === 'Advanced' ? 'Prior production deployment experience recommended' : 'Internet browser installed'
+      ].filter(Boolean);
+
+      const agenda = [
+        { time: '09:30 AM', title: 'Registrations & Morning Brew', description: 'Collect tags, settle down, and network with early attendees.' },
+        { time: '10:00 AM', title: 'Keynote & Initial Deep Dive', description: 'Opening statements and fundamental block breakdowns.' },
+        { time: '12:30 PM', title: 'Midday Lunch Break', description: 'Complimentary lunch buffet provided for all on-site registers.' },
+        { time: '01:30 PM', title: 'Hands-on Labs & Build Session', description: 'Coding together, debugging in groups, and testing live deployments.' }
+      ];
+
+      const faqs = [
+        { question: 'Is this event suitable for students?', answer: 'Yes, students are welcome. We recommend having a laptop for hands-on segments.' },
+        { question: 'Will certificates be provided?', answer: 'Yes, all attendees will receive a certificate of completion via email within 48 hours.' },
+        { question: 'What is the refund policy for tickets?', answer: 'Paid registrations are refundable up to 24 hours prior to the event start time.' }
+      ];
+
+      const sponsors = [
+        { name: company.name, logo: company.logo },
+        { name: 'GitHub India', logo: 'https://images.unsplash.com/photo-1618401471353-b98aedd07871?w=80&auto=format&fit=crop&q=60' }
+      ];
+
+      eventsToInsert.push({
+        title,
+        slug,
+        description: topic.desc,
+        longDescription: topic.longDesc,
+        date,
+        category,
+        location,
+        mode,
+        availableSeats: 50 + (i % 150),
+        registeredCount: 0,
+        speaker: speaker.name,
+        speakerImage: speaker.image,
+        speakerTitle: `${speaker.title} at ${speaker.company}`,
+        duration: i % 4 === 0 ? '1 Day' : '4 Hours',
+        banner: topic.banners,
+        organizer: `India Dev Circle (${cityString.split(',')[0]})`,
+        company: company.name,
+        companyLogo: company.logo,
+        rating: +(4.3 + (i % 7) * 0.1).toFixed(1),
+        reviewsCount: 15 + (i * 3),
+        price,
+        difficulty,
+        expectedAudience: i % 2 === 0 ? 'Developers & Architects' : 'Tech Enthusiasts & Students',
+        requirements,
+        agenda,
+        faqs,
+        sponsors
       });
     }
-    console.log(`Inserted ${sampleRegistrations.length} registrations and updated event seat counts.`);
 
-    // 4. Insert Analytics Logs
-    // Enrich analytics logs with actual event data
-    const enrichedLogs = (sampleAnalyticsLogs as any[]).map((log) => {
-      const payloadCopy = { ...log.payload };
-      if (payloadCopy.slug) {
-        const found = createdEvents.find((e) => e.slug === payloadCopy.slug);
-        if (found) {
-          payloadCopy.eventId = found._id;
-          payloadCopy.eventName = found.title;
-          payloadCopy.category = found.category;
-        }
-      }
-      return {
-        ...log,
-        payload: payloadCopy,
+    const createdEvents = await Event.insertMany(eventsToInsert);
+    console.log(`Successfully seeded ${createdEvents.length} events.`);
+
+    // 3. Generate 100 Registrations spread across events
+    const registrationsToInsert = [];
+    const sourceTypes = ['LinkedIn', 'WhatsApp', 'Instagram', 'Email', 'Direct'] as const;
+    const ticketTypes = ['General Admission', 'VIP Pass', 'Student Discount'] as const;
+
+    for (let k = 0; k < 100; k++) {
+      const firstName = FIRST_NAMES[k % FIRST_NAMES.length];
+      const lastName = LAST_NAMES[k % LAST_NAMES.length];
+      const name = `${firstName} ${lastName}`;
+      const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${k}@example.com`;
+      const phone = `${7 + (k % 3)}${Math.floor(100000000 + Math.random() * 900000000)}`; // 10 digit Indian number
+      
+      const targetEvent = createdEvents[k % createdEvents.length];
+      const source = sourceTypes[k % sourceTypes.length];
+      const ticketType = ticketTypes[k % ticketTypes.length];
+      
+      const college = k % 2 === 0 ? `University of ${CITIES[k % CITIES.length].split(',')[0]}` : '';
+      const company = k % 2 !== 0 ? `${COMPANIES[k % COMPANIES.length].name} Solutions` : '';
+
+      registrationsToInsert.push({
+        eventId: targetEvent._id,
+        name,
+        email,
+        phone,
+        college,
+        company,
+        source,
+        ticketType,
+        couponCode: k % 4 === 0 ? 'EARLYBIRD20' : '',
+        paymentStatus: targetEvent.price === 0 ? 'Free' : (k % 3 === 0 ? 'Paid' : 'Pending'),
+        referralCode: k % 5 === 0 ? `REF-${k}X` : '',
+        createdAt: new Date(now.getTime() - (k % 10) * 24 * 60 * 60 * 1000) // spread registration dates
+      });
+
+      // Update seats on event
+      await Event.findByIdAndUpdate(targetEvent._id, {
+        $inc: { availableSeats: -1, registeredCount: 1 }
+      });
+    }
+
+    await Registration.insertMany(registrationsToInsert);
+    console.log(`Successfully seeded 100 registrations.`);
+
+    // 4. Generate 300+ Analytics Logs
+    const analyticsLogs = [];
+    const logTypes: { type: AnalyticsEventType; payloadGen: (evt: any) => any }[] = [
+      { type: 'event_list_viewed', payloadGen: () => ({ filterMode: 'api' }) },
+      { type: 'event_list_viewed', payloadGen: () => ({ filterMode: 'client' }) },
+      { type: 'event_search_performed', payloadGen: () => ({ query: 'React', source: 'home' }) },
+      { type: 'event_search_performed', payloadGen: () => ({ query: 'AI', source: 'home' }) },
+      { type: 'event_filter_applied', payloadGen: () => ({ filter: 'category', value: 'Workshop' }) },
+      { type: 'event_filter_applied', payloadGen: () => ({ filter: 'location', value: 'Bengaluru' }) },
+      { type: 'event_card_clicked', payloadGen: (evt) => ({ eventId: evt._id, eventName: evt.title, category: evt.category }) },
+      { type: 'registration_submitted', payloadGen: (evt) => ({ eventId: evt._id, eventName: evt.title }) },
+      { type: 'registration_success', payloadGen: (evt) => ({ eventId: evt._id, eventName: evt.title, email: 'user@example.com' }) },
+      { type: 'dashboard_opened', payloadGen: () => ({ source: 'direct' }) },
+      { type: 'dashboard_export_csv', payloadGen: () => ({ count: 100 }) }
+    ];
+
+    for (let j = 0; j < 350; j++) {
+      const logInfo = logTypes[j % logTypes.length];
+      const targetEvent = createdEvents[j % createdEvents.length];
+      
+      analyticsLogs.push({
+        eventType: logInfo.type,
+        payload: logInfo.payloadGen(targetEvent),
         userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        ipAddress: '127.0.0.1',
-      };
-    });
+        ipAddress: `192.168.1.${10 + (j % 50)}`,
+        createdAt: new Date(now.getTime() - (j % 15) * 24 * 60 * 60 * 1000) // Spread over 15 days
+      });
+    }
 
-    await AnalyticsLog.insertMany(enrichedLogs);
-    console.log(`Inserted ${enrichedLogs.length} analytics events.`);
+    await AnalyticsLog.insertMany(analyticsLogs);
+    console.log(`Successfully seeded ${analyticsLogs.length} analytics events.`);
 
-    console.log('Database Seeding Completed Successfully!');
+    console.log('Seeder process finished successfully!');
     process.exit(0);
   } catch (error) {
-    console.error('Error seeding database:', error);
+    console.error('Seeder process failed:', error);
     process.exit(1);
   }
 };

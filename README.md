@@ -1,39 +1,140 @@
-# BharatEvents 🚀 | Event Registration Mini Application
+# BharatEvents 🚀 | Startup-Grade Event Ecosystem
 
-BharatEvents is a highly performant, responsive, and production-ready Full-Stack Event Registration application. Designed with a startup dashboard aesthetic, this application demonstrates professional design practices, robust API architectures, and bulletproof database integration.
+[![Next.js App Router](https://img.shields.io/badge/Next.js-16.2.10%20(Turbopack)-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/Language-TypeScript%20%2F%20ESNext-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![Express.js](https://img.shields.io/badge/Backend-Node.js%20%2F%20Express-lightgrey?style=flat-square&logo=express)](https://expressjs.org/)
+[![MongoDB](https://img.shields.io/badge/Database-MongoDB%20%2F%20Mongoose-emerald?style=flat-square&logo=mongodb)](https://www.mongodb.com/)
+[![Tailwind CSS V4](https://img.shields.io/badge/Styling-Tailwind%20CSS%20V4-38bdf8?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
+[![React Query V5](https://img.shields.io/badge/Caching-TanStack%20Query%20V5-ff4154?style=flat-square&logo=react-query)](https://tanstack.com/query/latest)
 
-The application allows users to discover upcoming tech and AI events across India's top tech hubs (Bengaluru, Noida, Gurugram, Delhi, Pune, Hyderabad, Mumbai, Chandigarh), view rich event details, register with built-in seat checks and double-booking protection, and provides an admin command centre featuring aggregated key performance metrics and searchable ledgers with CSV reports exporter.
+BharatEvents is an event discovery, registration, and management platform engineered to emulate high-growth startup ecosystems like Luma, Unstop, and Devfolio. Developed with a monorepo structure, strict TypeScript types, and a responsive Tailwind design, it bridges standard client interfaces with robust Express REST APIs and atomic MongoDB operations.
 
 ---
 
-## 🏗️ Architecture & Folder Structure
+## 📖 Table of Contents
 
-We follow a scalable monorepo-style structure, clearly separating the client-side Next.js application from the Node.js/Express.js REST backend.
+- [1. System Architecture](#1-system-architecture)
+- [2. Data Flow & Lifecycles](#2-data-flow--lifecycles)
+- [3. Folder Structure](#3-folder-structure)
+- [4. Technology Stack](#4-technology-stack)
+- [5. Configuration & Environment](#5-configuration--environment)
+- [6. Development & Run Commands](#6-development--run-commands)
+- [7. API Documentation](#7-api-documentation)
+- [8. Analytics Ledger Strategy](#8-analytics-ledger-strategy)
+- [9. Security Model](#9-security-model)
+- [10. Performance Optimizations](#10-performance-optimizations)
+- [11. Engineering Journey & Chronology](#11-engineering-journey--chronology)
+- [12. Product Showcase & Collage](#12-product-showcase--collage)
+- [13. Project Roadmap](#13-project-roadmap)
+- [14. Unverifiable Integrations Disclaimer](#14-unverifiable-integrations-disclaimer)
+
+---
+
+## 1. System Architecture
+
+BharatEvents divides its responsibilities into three distinct layers:
+1.  **Frontend Clientside SPA**: Rendered using Next.js (App Router) using Tailwind CSS V4 for styling, and Framer Motion for micro-animations.
+2.  **API Layer (REST Gateway)**: Express.js framework equipped with rate limiters, compression, CORS filters, and security headers.
+3.  **Persistence Layer (DB)**: MongoDB instances managed via Mongoose ODM, utilizing compound unique indexing to block duplication.
+
+### High-Level System Diagram
+
+```mermaid
+graph TD
+    Client[Next.js App Router Client]
+    Gateway[Express API Gateway]
+    Database[(MongoDB Community Server)]
+    Analytics[(Analytics & Logs DB)]
+
+    Client -->|1. EXPLORE / GET /api/events| Gateway
+    Client -->|2. BOOK / POST /api/events/:id/register| Gateway
+    Client -->|3. TRACK / POST /api/analytics/log| Gateway
+    Client -->|4. ADMIN / GET /api/analytics/dashboard| Gateway
+
+    Gateway -->|Read/Write Event Info| Database
+    Gateway -->|Write Registration Docs| Database
+    Gateway -->|Persist Activity Records| Analytics
+```
+
+---
+
+## 2. Data Flow & Lifecycles
+
+### Request & Registration Lifecycle
+
+This diagram displays the race-condition-free double booking check and rollback sequence.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Developer as Registrant
+    participant NextJS as Next.js Form
+    participant Server as Express Server
+    participant DB as MongoDB Instance
+
+    Developer->>NextJS: Submit Multi-step Registration Form
+    NextJS->>NextJS: Zod Validation check (phone, email)
+    NextJS->>Server: POST /api/events/:id/register
+    Server->>Server: Zod Middleware parse
+    Server->>DB: Query existing registration (email + eventId)
+    DB-->>Server: Return registration doc or null
+    alt Registration Already Exists
+        Server-->>NextJS: 400 Bad Request (Duplicate Email)
+        NextJS-->>Developer: Show "Email already registered" Toast
+    else Unique Registration
+        Server->>DB: Query Event for seats available
+        DB-->>Server: availableSeats count
+        alt Seats <= 0
+            Server-->>NextJS: 400 Bad Request (House Full)
+            NextJS-->>Developer: Show "House Full" error state
+        else Seats Available
+            Server->>DB: Save Registration Document
+            DB-->>Server: Saved Document
+            Server->>DB: Atomically decrement seats (findOneAndUpdate availableSeats > 0)
+            DB-->>Server: Updated Event doc or null
+            alt Atomic Update Succeeded
+                Server-->>NextJS: 201 Created (Booking Confirmed)
+                NextJS-->>Developer: Render Invoice step 4 & Success Toast
+            else Race Condition (Another request took the last seat)
+                Server->>DB: Rollback (Delete saved Registration)
+                DB-->>Server: Deleted confirmation
+                Server-->>NextJS: 400 Bad Request (Seats Filled)
+                NextJS-->>Developer: Show booking failure notification
+            end
+        end
+    end
+```
+
+---
+
+## 3. Folder Structure
+
+The repository uses a workspace layout, keeping backend and frontend folders separate and modular:
 
 ```text
 Event_App/
-├── backend/                       # Express.js Server
+├── backend/                       # Express.js API Server
 │   ├── src/
 │   │   ├── config/                # Mongoose Database Connection
 │   │   │   └── db.ts
 │   │   ├── models/                # Mongoose Schema Definitions
-│   │   │   ├── event.model.ts
-│   │   │   ├── registration.model.ts
-│   │   │   └── analytics.model.ts
-│   │   ├── controllers/           # API Request Controllers
+│   │   │   ├── event.model.ts     # Rich Event Fields (Agendas, Sponsors)
+│   │   │   ├── registration.model.ts # Ticket details, payment status
+│   │   │   └── analytics.model.ts # Activity logs schema
+│   │   ├── controllers/           # Route Business Logic
 │   │   │   ├── eventController.ts
 │   │   │   ├── registrationController.ts
 │   │   │   └── analyticsController.ts
-│   │   ├── routes/                # Express API Route Mappings
+│   │   ├── routes/                # Express Route Maps
 │   │   │   ├── event.routes.ts
 │   │   │   └── analytics.routes.ts
-│   │   ├── middlewares/           # Global Middlewares
+│   │   ├── middlewares/           # Middlewares (Rate limit, errors)
 │   │   │   ├── error.middleware.ts
 │   │   │   ├── rateLimiter.ts
 │   │   │   └── validate.middleware.ts
 │   │   ├── validators/            # Request Schemas (Zod validation)
 │   │   │   └── validateRegistration.ts
-│   │   ├── seed/                  # Database Initializer Script
+│   │   ├── seed/                  # Seeder Script (seeds 100+ events)
 │   │   │   └── seedEvents.ts
 │   │   ├── utils/                 # General Utilities (AsyncWrapper, Loggers)
 │   │   │   └── asyncWrapper.ts
@@ -42,73 +143,68 @@ Event_App/
 │   ├── package.json
 │   └── .env
 │
-├── frontend/                      # Next.js Frontend (App Router)
-│   ├── app/                       # Page Router and Layouts
-│   │   ├── admin/dashboard/       # Protected Admin Command Centre
+├── frontend/                      # Next.js SPA
+│   ├── app/                       # Page routing
+│   │   ├── admin/dashboard/       # Protected Dashboard Layout
 │   │   │   └── page.tsx
-│   │   ├── events/[slug]/         # Detailed Event View & Registration Modal
+│   │   ├── events/[slug]/         # Detailed landing & multi-step checkout
 │   │   │   └── page.tsx
-│   │   ├── page.tsx               # Explore Events Listing Page
-│   │   ├── layout.tsx             # Global HTML template and Providers wrapper
-│   │   ├── globals.css            # CSS styling and Tailwind V4 definitions
+│   │   ├── page.tsx               # Homepage Listing
+│   │   ├── layout.tsx             # Theme structure and provider wraps
+│   │   ├── globals.css            # Stylesheets & Tailwind theme configs
 │   │   ├── not-found.tsx          # Custom 404 handler
-│   │   ├── error.tsx              # React Error Boundary
+│   │   ├── error.tsx              # Error boundary
 │   │   ├── sitemap.ts             # Dynamic search sitemap compiler
 │   │   └── robots.txt             # Web crawler configuration
-│   ├── components/                # Reusable UI Elements
+│   ├── components/                # Modular client elements
 │   │   ├── Navbar.tsx
 │   │   ├── Footer.tsx
-│   │   ├── Modal.tsx              # Reusable Slide-over Modal overlay
-│   │   ├── ConfirmationDialog.tsx # Reusable double-confirm alerts
-│   │   ├── EmptyState.tsx         # Clean zero-records states
-│   │   ├── EventCardSkeleton.tsx  # Pulse skeleton loaders
+│   │   ├── Modal.tsx              # Reusable modal overlays
+│   │   ├── ConfirmationDialog.tsx # Double confirm popup alert
+│   │   ├── EmptyState.tsx         # Clean zero search displays
+│   │   ├── EventCardSkeleton.tsx  # Pulse skeleton blocks
 │   │   └── QueryProvider.tsx      # React-Query Client Setup
 │   ├── services/                  # Axios HTTP client requests
 │   │   └── eventService.ts
-│   ├── hooks/                     # Custom React Hooks
+│   ├── hooks/                     # Custom React Hooks (Debouncing)
 │   │   └── useDebounce.ts
-│   ├── types/                     # Shared TypeScript interface definitions
+│   ├── types/                     # Shared TypeScript interfaces
 │   │   └── index.ts
-│   ├── analytics/                 # Frontend tracking utility
+│   ├── analytics/                 # Tracker utility client
 │   │   └── tracker.ts
 │   ├── tsconfig.json
 │   ├── package.json
 │   └── next.config.ts
 │
-├── PDF_REQUIREMENTS.md            # Extracted technical requirements
-├── README.md                      # Project documentation
-└── .gitignore                     # Repository ignores config
+└── package.json                   # Root package runner shortcuts
 ```
 
 ---
 
-## ⚡ Tech Stack
+## 4. Technology Stack
 
-### Frontend
-- **Framework:** Next.js (App Router, Version 16)
-- **Language:** TypeScript
-- **Styling:** Tailwind CSS V4
-- **State Management & Fetching:** TanStack React Query (V5) & Axios
-- **Form Management & Validation:** React Hook Form & Zod
-- **Notifications:** React Hot Toast
-- **Icons:** Lucide Icons
-- **Animations:** Framer Motion (micro-animations on hover/transitions)
+### Frontend Client
+*   **Framework**: Next.js 16 (App Router with Turbopack compilation).
+*   **Language**: TypeScript (Strict typing enabled).
+*   **CSS Engine**: Tailwind CSS V4.
+*   **State Management**: TanStack React Query V5 & Axios clients.
+*   **Form Management**: React Hook Form with Zod validation adapters.
+*   **Notifications**: React Hot Toast (positioned top-center).
+*   **Animations**: Framer Motion transitions.
 
-### Backend
-- **Framework:** Node.js & Express.js
-- **Database:** MongoDB (using Mongoose ODM)
-- **Language:** TypeScript (using `ts-node-dev` for auto-reloading)
-- **Validation:** Zod schemas
-- **Security:** Helmet, Express Rate Limiter, CORS settings
-- **Performance:** Compression middleware (Gzip), MongoDB indexing
+### Backend Server
+*   **Engine**: Node.js v24.16 & Express.js.
+*   **Database**: MongoDB & Mongoose ODM.
+*   **TypeScript Runner**: `ts-node-dev` for hot-reloading development.
+*   **Diagnostics**: Dynamic CPU Heap size checks.
 
 ---
 
-## ⚙️ Environment Variables
+## 5. Configuration & Environment
 
-Ensure you create `.env` files inside both directories to run the application in production/development:
+Create `.env` variables inside both folders:
 
-### Backend Environment Variables (`backend/.env`)
+### Backend configuration (`backend/.env`)
 ```env
 PORT=5001
 MONGO_URI=mongodb://127.0.0.1:27017/event_registration_db
@@ -116,208 +212,154 @@ NODE_ENV=development
 FRONTEND_URL=http://localhost:3000
 ```
 
-### Frontend Environment Variables (`frontend/.env.local` or environment config)
+### Frontend configuration (`frontend/.env.local`)
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:5001
 ```
 
 ---
 
-## 🚀 Quick Start Guide
+## 6. Development & Run Commands
 
-### Prerequisites
-1. **Node.js** (v18.0.0 or later recommended)
-2. **MongoDB** community server running locally on port 27017 (or a MongoDB Atlas connection string configured in `MONGO_URI`).
+You can run these scripts directly from the root workspace directory:
+
+1.  **Install all workspace dependencies**:
+    ```bash
+    npm run install:all
+    ```
+2.  **Seed the MongoDB database**:
+    ```bash
+    npm run seed
+    ```
+3.  **Start the Express API Server (Runs on port 5001)**:
+    ```bash
+    npm run dev:backend
+    ```
+4.  **Start the Next.js Frontend (Runs on port 3000)**:
+    ```bash
+    npm run dev:frontend
+    ```
 
 ---
 
-### Step 1: Start MongoDB
-If using macOS and installed via Homebrew:
-```bash
-brew services start mongodb-community
+## 7. API Documentation
+
+### Event Routes
+*   `GET /api/events` - Lists paginated events. Query filters: `search`, `category`, `mode`, `location`, `page`, `limit`.
+*   `GET /api/events/:id` - Retrieves a single event. `:id` accepts either MongoDB `_id` or `slug`.
+*   `POST /api/events` - Creates an event (generates unique slugs dynamically).
+*   `POST /api/events/:id/register` - Registers a user. Form validation checks for duplicate emails and seat capacity status.
+*   `GET /api/events/:id/registrations` - Lists registrations for the event.
+
+### Analytics Routes
+*   `POST /api/analytics/log` - Logs a user tracking action.
+*   `GET /api/analytics/dashboard` - Computes revenue, registrations per event, daily trends, conversion funnels, and system diagnostics.
+*   `GET /api/analytics/registrations` - Searches across registrations.
+
+---
+
+## 8. Analytics Ledger Strategy
+
+Our tracking logger (`tracker.ts`) logs events to the browser console and saves them to MongoDB:
+
+```mermaid
+graph LR
+    User[User Click/Scroll] -->|Trigger Tracker| Client[tracker.ts]
+    Client -->|Console Output| Console[Browser Console]
+    Client -->|Axios POST| API[POST /api/analytics/log]
+    API -->|Save Document| Log[(MongoDB AnalyticsLogs)]
 ```
 
----
-
-### Step 2: Set Up and Run Backend
-1. Open a terminal and navigate to the backend:
-   ```bash
-   cd backend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Seed the database with 9 realistic events, 10 bookings, and sample logs:
-   ```bash
-   npm run seed
-   ```
-4. Start the development server (runs on port 5001):
-   ```bash
-   npm run dev
-   ```
+### Logged Actions
+1.  `event_list_viewed`: Fires when listing page loads.
+2.  `event_search_performed`: Debounced tracking of search queries.
+3.  `event_filter_applied`: Tracks applied filters.
+4.  `event_card_clicked`: Tracks clicked events.
+5.  `registration_submitted`: Tracks form submissions.
+6.  `registration_success`: Tracks successful bookings.
+7.  `registration_failed`: Tracks failed bookings with error payloads.
+8.  `share_clicked`: Tracks link sharing.
+9.  `bookmark_clicked`: Tracks bookmarked events.
+10. `download_calendar`: Tracks calendar sync clicks.
+11. `dashboard_opened`: Tracks admin logins.
+12. `dashboard_export_csv`: Tracks CSV exports.
 
 ---
 
-### Step 3: Set Up and Run Frontend
-1. Open a new terminal and navigate to the frontend:
-   ```bash
-   cd frontend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Start the Next.js development server (runs on port 3000):
-   ```bash
-   npm run dev
-   ```
+## 9. Security Model
+
+*   **API Rate Limiters**: 
+    *   API-wide limits: Maximum 100 requests per 15 minutes per IP address.
+    *   Registration limits: Maximum 10 registration attempts per minute per IP to prevent bot spam.
+*   **Security Headers**: Integrated `helmet` middleware to enforce CSP, XSS protection, and frame headers.
+*   **CORS Filters**: Origin whitelist checking with credentials permission.
+*   **Double-Booking Lock**: Unique compound index `{ eventId: 1, email: 1 }` prevents double bookings at the database level.
+*   **Protected Dashboard**: `/admin/dashboard` is protected by passphrase `admin123`.
 
 ---
 
-## 🔌 API Documentation
+## 10. Performance Optimizations
 
-All APIs are prefixed with `/api` and run on `http://localhost:5001`.
-
-### Events Endpoint
-#### 1. Fetch Events List
-- **Route:** `GET /api/events`
-- **Query Parameters:**
-  - `search` (string) - Filters titles by keyword
-  - `category` (string) - Filters category (`Workshop`, `Hackathon`, `Seminar`, `Webinar`, `Bootcamp`, `AI Meetup`)
-  - `mode` (string) - Filters modes (`Offline`, `Online`, `Hybrid`)
-  - `location` (string) - Filters city names
-  - `page` (number) - Active page (default: 1)
-  - `limit` (number) - Limits items per page (default: 8)
-- **Response Format:**
-  ```json
-  {
-    "success": true,
-    "data": {
-      "events": [...],
-      "pagination": {
-        "totalCount": 9,
-        "totalPages": 2,
-        "currentPage": 1,
-        "limit": 8
-      }
-    }
-  }
-  ```
-
-#### 2. Fetch Single Event
-- **Route:** `GET /api/events/:id`
-- **Parameters:** `:id` can be the Mongoose ObjectId or the event `slug`.
-- **Response:** Returns the full event object.
-
-#### 3. Create Event
-- **Route:** `POST /api/events`
-- **Body:** JSON representing the IEvent interface. Generates a unique slug dynamically.
-
-#### 4. Register for an Event
-- **Route:** `POST /api/events/:id/register`
-- **Body:**
-  ```json
-  {
-    "name": "Arjun Sharma",
-    "email": "arjun.sharma@example.com",
-    "phone": "9876543210",
-    "college": "IIT Bombay",
-    "company": "",
-    "source": "LinkedIn"
-  }
-  ```
-- **Error Handling:** 
-  - Validates format using Zod (including Indian +91 phone check).
-  - Returns `400 Bad Request` if event is fully booked (`availableSeats <= 0`).
-  - Returns `400 Bad Request` if email is already registered for this event (prevented via Mongoose compound unique index `{ eventId: 1, email: 1 }`).
-
-#### 5. Get Event Registrations
-- **Route:** `GET /api/events/:id/registrations`
-- **Response:** Returns list of registrations booked for the specified event.
+*   **Next.js Dynamic Sitemap**: Built in [sitemap.ts](file:///Users/legend27648/agy_project/Event_App/frontend/app/sitemap.ts), fetching events dynamically to build search engines links.
+*   **Turbopack Compilation**: High-speed compilation utilizing Turbopack engines.
+*   **Gzip Compression**: Compresses Express responses.
+*   **Database Indexing**: Indexes `slug` and `email` on Event and Registration models.
+*   **Static Rendering Fallbacks**: Sitemap and page configurations degrade gracefully to static fallbacks if the API is offline.
 
 ---
 
-### Analytics & Dashboard Endpoints
-#### 1. Log Analytics Event
-- **Route:** `POST /api/analytics/log`
-- **Body:** `{ eventType, payload }`
-- **Process:** Saves the event type, custom payload, client User-Agent, and client IP address to MongoDB.
+## 11. Engineering Journey & Chronology
 
-#### 2. Get Dashboard Aggregates
-- **Route:** `GET /api/analytics/dashboard`
-- **Response:**
-  ```json
-  {
-    "success": true,
-    "data": {
-      "totals": {
-        "totalEvents": 9,
-        "totalRegistrations": 10,
-        "totalAvailableSeats": 1150,
-        "totalFilledSeats": 10
-      },
-      "registrationsPerEvent": [
-        { "eventId": "...", "title": "Next.js 15 Deep Dive", "count": 3 }
-      ],
-      "topEvents": [...],
-      "recentRegistrations": [...]
-    }
-  }
-  ```
+### The Development Story of a Startup Ecosystem
 
-#### 3. Search All Registrations
-- **Route:** `GET /api/analytics/registrations`
-- **Query Parameters:** `search` (keyword matches name, email, phone, company, college, or event titles).
+*   **Phase 1 (Day 1) — Initialization**:
+    *   *Decision*: Monorepo structure selected separating `backend/` and `frontend/` folders.
+    *   *Result*: Initialized Git, created workspace configuration files, and setup project dependencies.
+*   **Phase 2 (Day 1) — API Core**:
+    *   *Decision*: Configured MongoDB schemas using Mongoose. Created Zod validation schemas for registration payloads.
+    *   *Issue Encountered*: Standard `read-before-write` operations caused race conditions during high concurrency tests.
+    *   *Resolution*: Implemented atomic seat decrements (`findOneAndUpdate` with seat limits) and rollbacks.
+*   **Phase 3 (Day 2) — Next.js SPA & Styling**:
+    *   *Decision*: Next.js App Router selected. Structured components folder with reusable modals, loaders, and confirmation popups.
+    *   *Issue Encountered*: The production build failed due to Google Fonts fetching errors.
+    *   *Resolution*: Replaced remote font imports in `layout.tsx` and `globals.css` with local system UI stacks.
+*   **Phase 4 (Day 2) — Startup-Grade Ecosystem Upgrades**:
+    *   *Decision*: Redesigned homepage and details pages to support Luma-style layouts (agendas, sponsors, certificate cards, etc.).
+    *   *Result*: Scaled seeder script to populate **100 events** across **13 cities** with detailed diagnostics.
 
 ---
 
-## 📊 Analytics Documentation
+## 12. Product Showcase & Collage
 
-We implement complete activity logging. Every tracking action triggers a browser console output and is saved to the MongoDB `AnalyticsLog` collection.
+To capture screenshots of the platform, follow this recommended capture guide:
 
-### Tracked Actions
-1. `event_list_viewed`: Fired when listing page loads. Payload: `{ filterMode: 'client' | 'api' }`
-2. `event_search_performed`: Fired when user types into the search bar (debounced). Payload: `{ query: string, source: 'home' | 'dashboard' }`
-3. `event_filter_applied`: Fired when filters are adjusted. Payload: `{ filter: string, value: string }`
-4. `event_card_clicked`: Fired when opening details. Payload: `{ eventId: string, eventName: string, category: string }`
-5. `registration_submitted`: Fired when starting the registration request. Payload: `{ eventId, eventName }`
-6. `registration_success`: Fired on booking success. Payload: `{ eventId, eventName, email }`
-7. `registration_failed`: Fired on booking error. Payload: `{ eventId, eventName, errorMessage }`
-8. `dashboard_opened`: Fired when admin signs in. Payload: `{ source: string }`
-9. `dashboard_export_csv`: Fired when registrations table is exported. Payload: `{ count: number }`
-
----
-
-## 🔑 Admin Dashboard Passphrase
-To access the Admin dashboard `/admin/dashboard`, use the passphrase:
-🔑 **`admin123`**
+1.  **Homepage Hero Section**: Capture the animated gradient and terminal live diagnostic cards. 
+    *   *Suggested Filename*: `01_hero_section.png`
+2.  **Featured Events Carousel**: Highlight the recommendation cards showing ratings, speakers, and free badges.
+    *   *Suggested Filename*: `02_featured_carousel.png`
+3.  **Upcoming Events Grid & Filters**: Show the category pill filters and toggling buttons between client and API filtering.
+    *   *Suggested Filename*: `03_events_listing.png`
+4.  **Event Detail Landing Page**: Display the agenda timeline, requirements, certificate info, and speakers section.
+    *   *Suggested Filename*: `04_event_details.png`
+5.  **Multi-Step Checkout Modal**: Show the ticket tiers, Early Bird coupon input (`EARLYBIRD20`), and invoice summaries.
+    *   *Suggested Filename*: `05_checkout_wizard.png`
+6.  **Secure Admin Lock Screen**: Show the restricted gatekeeper panel.
+    *   *Suggested Filename*: `06_admin_lock.png`
+7.  **Admin Command Centre Dashboard**: Highlight the KPI cards, the registration trends SVG area chart, and the conversion funnel.
+    *   *Suggested Filename*: `07_admin_dashboard.png`
 
 ---
 
-## 🛠️ Debugging & Known Issues
+## 13. Project Roadmap
 
-### 1. MongoDB Connection Failure
-- **Issue:** Seeding or server start fails with `MongooseServerSelectionError: connect ECONNREFUSED 127.0.0.1:27017`.
-- **Reason:** MongoDB daemon is not running on port 27017.
-- **Resolution:** Verify MongoDB is active using `brew services list` or run it manually. If using a remote database, ensure the correct connection string is passed to `MONGO_URI`.
-
-### 2. Race Conditions on Simultaneous Bookings
-- **Design Resolution:** To prevent double bookings or seats dropping below zero during simultaneous requests, we implemented an atomic MongoDB query:
-  `Event.findOneAndUpdate({ _id: id, availableSeats: { $gt: 0 } }, { $inc: { availableSeats: -1, registeredCount: 1 } })`
-  If this atomic update returns null (meaning availableSeats was 0), we automatically delete the created registration and throw an error to rollback.
+*   [ ] **OAuth Integration**: Implement Google & GitHub login.
+*   [ ] **Organizer Dashboards**: Allow communities to create and manage their own events.
+*   [ ] **Real-Time WebSockets**: Live tickers displaying active bookings.
+*   [ ] **Payment Gateway**: Integrate Razorpay test gateway for paid events.
 
 ---
 
-## 🤖 AI Assistance Note
+## 14. Unverifiable Integrations Disclaimer
 
-This project was built with assistance from **Antigravity**, Google's agentic AI coding assistant.
-### AI-Assisted Tasks:
-1. **Folder Structures & Configurations:** Auto-generated scaffolding for Express.js with TypeScript support and Next.js Turbopack compiler.
-2. **Atomic Seat Reductions:** Recommended the race-condition-free MongoDB `findOneAndUpdate` approach to guarantee accurate slot counts under heavy concurrency.
-3. **TypeScript Definitions:** Mapped Mongoose document types to React TanStack Query objects for end-to-end type safety.
-4. **CSV Serializer:** Assembled client-side UTF-8 CSV download functions.
-5. **Interactive UI polish:** Provided layout guidelines for spacing, skeletons, and cards.
-
----
-*Made with ❤️ by Hariom in Bengaluru.*
+> [!NOTE]
+> The current production release contains mock pathways and fallback systems for Sentry monitoring, PostHog logs, Resend notifications, Supabase Auth, and Cloudflare R2 files. These are not active in this repository and are documented strictly for architectural design reviews.

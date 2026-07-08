@@ -315,7 +315,14 @@ export default function EventListingPage() {
                   </div>
 
                   <div className="relative h-44 w-full bg-zinc-850 overflow-hidden">
-                    <img src={evt.banner} alt={evt.title} className="h-full w-full object-cover group-hover:scale-105 transition duration-500" />
+                    <img
+                      src={evt.banner}
+                      alt={evt.title}
+                      className="h-full w-full object-cover group-hover:scale-105 transition duration-500"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2050/svg" width="800" height="400" viewBox="0 0 800 400" style="background:%2318181b"><rect width="800" height="400" fill="%2327272a"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%2371717a" font-family="sans-serif" font-weight="bold" font-size="20">BharatEvents Cover</text></svg>`;
+                      }}
+                    />
                   </div>
 
                   <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
@@ -532,6 +539,9 @@ export default function EventListingPage() {
                     src={event.banner}
                     alt={event.title}
                     className="h-full w-full object-cover group-hover:scale-103 transition duration-500"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400" viewBox="0 0 800 400" style="background:%2318181b"><rect width="800" height="400" fill="%2327272a"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%2371717a" font-family="sans-serif" font-weight="bold" font-size="20">BharatEvents Cover</text></svg>`;
+                    }}
                   />
                   {/* Free badge */}
                   {event.price === 0 && (
@@ -676,7 +686,14 @@ export default function EventListingPage() {
                   "{test.quote}"
                 </p>
                 <div className="flex items-center gap-3">
-                  <img src={test.image} alt={test.author} className="h-10 w-10 rounded-full object-cover border border-zinc-200 dark:border-zinc-850" />
+                  <img
+                    src={test.image}
+                    alt={test.author}
+                    className="h-10 w-10 rounded-full object-cover border border-zinc-200 dark:border-zinc-850"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" style="background:%2327272a"><circle cx="50" cy="35" r="20" fill="%2352525b"/><path d="M20 85c0-15 15-25 30-25s30 10 30 25" fill="%2352525b"/></svg>`;
+                    }}
+                  />
                   <div>
                     <h4 className="text-xs font-bold text-zinc-900 dark:text-zinc-50">{test.author}</h4>
                     <span className="text-[10px] text-zinc-400 block">{test.role}</span>

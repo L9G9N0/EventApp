@@ -323,7 +323,14 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
           
           {/* Cover Banner */}
           <div className="relative h-[26rem] w-full overflow-hidden rounded-3xl border border-zinc-150 dark:border-zinc-800/80 shadow-md">
-            <img src={event.banner} alt={event.title} className="h-full w-full object-cover" />
+            <img
+              src={event.banner}
+              alt={event.title}
+              className="h-full w-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400" viewBox="0 0 800 400" style="background:%2318181b"><rect width="800" height="400" fill="%2327272a"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%2371717a" font-family="sans-serif" font-weight="bold" font-size="20">BharatEvents Cover</text></svg>`;
+              }}
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent pointer-events-none" />
             
             <div className="absolute bottom-6 left-6 right-6 flex flex-wrap items-end justify-between gap-4">
@@ -428,6 +435,9 @@ export default function EventDetailsPage({ params }: { params: Promise<{ slug: s
                 src={event.speakerImage}
                 alt={event.speaker}
                 className="h-16 w-16 rounded-full object-cover border border-zinc-200 dark:border-zinc-800"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" style="background:%2327272a"><circle cx="50" cy="35" r="20" fill="%2352525b"/><path d="M20 85c0-15 15-25 30-25s30 10 30 25" fill="%2352525b"/></svg>`;
+                }}
               />
               <div className="space-y-1 text-center sm:text-left">
                 <h3 className="text-sm font-black text-zinc-900 dark:text-zinc-100">{event.speaker}</h3>
